@@ -1,4 +1,5 @@
 ---
+<<<<<<< HEAD
 title: EcoCloud OpenEnv
 emoji: "🌿"
 colorFrom: green
@@ -204,3 +205,15 @@ The code is locally complete, but submission readiness still depends on:
 - successful Docker build on the target platform
 - exact compliance of `inference.py` log formatting with the official sample
 - passing the official hackathon validator if one is provided
+=======
+title: Ecocloud Openenv
+emoji: ⚡
+colorFrom: blue
+colorTo: red
+sdk: docker
+pinned: false
+license: mit
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+>>>>>>> 7559b09478fcd05fe48a2c974d7be1fb316751a6
