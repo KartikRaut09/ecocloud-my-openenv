@@ -1,0 +1,87 @@
+name: ecocloud-openenv
+version: "1.0.0"
+description: >
+  A real-world carbon-aware GPU operations environment where an agent performs
+  workload migration, server activation and shutdown, and power-cap management
+  to reduce emissions, cost, and thermal risk while preserving reliability.
+domain: cloud-infrastructure-operations
+license: MIT
+tags:
+  - openenv
+  - carbon-aware-scheduling
+  - gpu-operations
+  - infrastructure
+deployment:
+  framework: fastapi
+  container: docker
+  app_port: 7860
+  dockerfile: Dockerfile
+  endpoints:
+    reset: POST /reset
+    step: POST /step
+    state: GET /state
+    validate: GET /validate
+tasks:
+  - id: task_1_idle_capacity_cleanup
+    difficulty: easy
+    max_steps: 5
+    success_threshold: 0.9
+  - id: task_2_carbon_aware_rebalancing
+    difficulty: medium
+    max_steps: 8
+    success_threshold: 0.85
+  - id: task_3_resilient_multi_objective_dispatch
+    difficulty: hard
+    max_steps: 10
+    success_threshold: 0.74
+action_space:
+  type: object
+  required:
+    - action_type
+    - task_id
+  properties:
+    action_type:
+      type: string
+      enum:
+        - migrate_workload
+        - set_power_cap
+        - shutdown_server
+        - activate_server
+        - noop
+    task_id:
+      type: string
+    server_id:
+      type: string
+      nullable: true
+    workload_id:
+      type: string
+      nullable: true
+    target_server_id:
+      type: string
+      nullable: true
+    power_cap_kw:
+      type: number
+      nullable: true
+observation_space:
+  type: object
+  properties:
+    task_id:
+      type: string
+    task_name:
+      type: string
+    difficulty:
+      type: string
+    objective:
+      type: string
+    step_number:
+      type: integer
+    max_steps:
+      type: integer
+    regions:
+      type: array
+    servers:
+      type: array
+    workloads:
+      type: array
+    metrics:
+      type: object
