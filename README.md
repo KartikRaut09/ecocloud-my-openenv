@@ -1,5 +1,4 @@
 ---
-<<<<<<< HEAD
 title: EcoCloud OpenEnv
 emoji: "🌿"
 colorFrom: green
