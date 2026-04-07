@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 
 from fastapi.testclient import TestClient
 
@@ -9,6 +11,7 @@ from env.baseline_policy import choose_heuristic_action
 from env.environment import EcoCloudEnv
 from env.models import Action
 from graders.graders import grade_payload
+from inference import emit_end, emit_start, emit_step
 from tasks.task_data import TASK_ORDER
 
 
@@ -75,6 +78,27 @@ class ApiSurfaceTests(unittest.TestCase):
         state_response = self.client.get("/state")
         self.assertEqual(state_response.status_code, 200)
         self.assertEqual(state_response.json()["task_id"], TASK_ORDER[0])
+
+    def test_reset_accepts_empty_body(self) -> None:
+        reset_response = self.client.post("/reset", json={})
+        self.assertEqual(reset_response.status_code, 200)
+        self.assertEqual(reset_response.json()["task"]["task_id"], TASK_ORDER[0])
+
+
+class InferenceFormattingTests(unittest.TestCase):
+    def test_emit_format(self) -> None:
+        buffer = StringIO()
+        with redirect_stdout(buffer):
+            emit_start("task_1_idle_capacity_cleanup")
+            emit_step(1, "noop()", 0.0, False, None)
+            emit_end(True, 1, 0.5, [0.0])
+        lines = [line.strip() for line in buffer.getvalue().splitlines()]
+        self.assertEqual(
+            lines[0],
+            "[START] task=task_1_idle_capacity_cleanup env=ecocloud-openenv model=meta-llama/Meta-Llama-3.1-8B-Instruct",
+        )
+        self.assertEqual(lines[1], "[STEP] step=1 action=noop() reward=0.00 done=false error=null")
+        self.assertEqual(lines[2], "[END] success=true steps=1 score=0.50 rewards=0.00")
 
 
 if __name__ == "__main__":

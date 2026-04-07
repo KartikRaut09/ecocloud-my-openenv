@@ -250,6 +250,7 @@ class EcoCloudEnv:
         self._done = False
         self._migration_count = 0
         self._last_event = "Environment initialized."
+        self._last_action_error: str | None = None
         self._last_reward: Reward | None = None
         self._recent_actions: list[Action] = []
         self.reset(TASK_ORDER[0])
@@ -281,6 +282,7 @@ class EcoCloudEnv:
         self._done = False
         self._migration_count = 0
         self._last_event = f"Reset task {task_id}."
+        self._last_action_error = None
         self._last_reward = None
         self._recent_actions = []
         snapshot = self._snapshot()
@@ -301,9 +303,11 @@ class EcoCloudEnv:
         if self._done:
             invalid_action = True
             self._last_event = "Episode already complete; action ignored."
+            self._last_action_error = self._last_event
         else:
             self._step_count += 1
             self._last_event, invalid_action = self._apply_action(action)
+            self._last_action_error = self._last_event if invalid_action else None
             self._recent_actions.append(action)
             self._recent_actions = self._recent_actions[-10:]
 
@@ -333,7 +337,7 @@ class EcoCloudEnv:
             observation=self._build_observation(snapshot),
             reward=reward,
             done=self._done,
-            info={"grader": grade, "invalid_action": invalid_action, "episode_id": self._episode_id, "success_threshold": self._task["success_threshold"]},
+            info={"grader": grade, "invalid_action": invalid_action, "last_action_error": self._last_action_error, "episode_id": self._episode_id, "success_threshold": self._task["success_threshold"]},
         )
 
     def _snapshot(self) -> dict[str, Any]:
@@ -356,7 +360,7 @@ class EcoCloudEnv:
         return Observation(task_id=self._task["task_id"], task_name=self._task["name"], difficulty=self._task["difficulty"], objective=self._task["objective"], step_number=self._step_count, max_steps=self._task["max_steps"], recent_event=self._last_event, allowed_action_types=[ActionType.MIGRATE_WORKLOAD, ActionType.SET_POWER_CAP, ActionType.SHUTDOWN_SERVER, ActionType.ACTIVATE_SERVER, ActionType.NOOP], regions=regions, servers=servers, workloads=workloads, metrics=metrics)
 
     def _build_state(self, snapshot: dict[str, Any]) -> EnvState:
-        return EnvState(env_name=ENV_NAME, version=ENV_VERSION, episode_id=self._episode_id, task_id=self._task["task_id"], step_count=self._step_count, max_steps=self._task["max_steps"], done=self._done, last_event=self._last_event, last_reward=self._last_reward, metrics=Metrics(**{key: value for key, value in snapshot["metrics"].items() if key in Metrics.model_fields}), recent_actions=self._recent_actions)
+        return EnvState(env_name=ENV_NAME, version=ENV_VERSION, episode_id=self._episode_id, task_id=self._task["task_id"], step_count=self._step_count, max_steps=self._task["max_steps"], done=self._done, last_event=self._last_event, last_action_error=self._last_action_error, last_reward=self._last_reward, metrics=Metrics(**{key: value for key, value in snapshot["metrics"].items() if key in Metrics.model_fields}), recent_actions=self._recent_actions)
 
     def _server_gpu_demand(self, server_id: str) -> float:
         return sum(workload["gpu_demand"] for workload in self._workloads.values() if workload["assigned_server_id"] == server_id)

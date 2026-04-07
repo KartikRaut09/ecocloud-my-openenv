@@ -9,7 +9,7 @@ from env.models import Action, EnvState, Observation, StepResult, TaskSummary
 
 
 class ResetRequest(BaseModel):
-    task_id: str
+    task_id: str | None = None
 
 
 class ResetResponse(BaseModel):
@@ -58,13 +58,14 @@ def tasks() -> list[TaskSummary]:
 
 
 @app.post("/reset", response_model=ResetResponse)
-def reset(request: ResetRequest) -> ResetResponse:
+def reset(request: ResetRequest | None = None) -> ResetResponse:
+    task_id = request.task_id if request and request.task_id else env.list_tasks()[0]["task_id"]
     try:
-        observation = env.reset(request.task_id)
+        observation = env.reset(task_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    summary = next(task for task in env.list_tasks() if task["task_id"] == request.task_id)
+    summary = next(task for task in env.list_tasks() if task["task_id"] == task_id)
     return ResetResponse(
         observation=observation,
         task=TaskSummary(**summary),

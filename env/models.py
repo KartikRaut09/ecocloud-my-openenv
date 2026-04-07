@@ -140,6 +140,7 @@ class EnvState(BaseModel):
     max_steps: int = Field(..., gt=0)
     done: bool
     last_event: str
+    last_action_error: str | None = None
     last_reward: Reward | None = None
     metrics: Metrics
     recent_actions: list[Action] = Field(default_factory=list)
