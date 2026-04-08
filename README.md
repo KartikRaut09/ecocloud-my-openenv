@@ -1,121 +1,150 @@
+<p align="center">
+  <h1 align="center">EcoCloud OpenEnv</h1>
+  <p align="center">
+    A real-world OpenEnv benchmark for carbon-aware GPU infrastructure operations.
+  </p>
+</p>
+
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white">
+  <img alt="OpenEnv" src="https://img.shields.io/badge/OpenEnv-Compatible-111111">
+  <img alt="HF Spaces" src="https://img.shields.io/badge/HuggingFace-Spaces-FFD21E">
+</p>
+
+<p align="center">
+  EcoCloud simulates the real operational decisions made by infra and platform teams:
+  workload placement, carbon-aware scheduling, power-cap management, idle capacity cleanup,
+  and reliability-preserving dispatch under thermal and cost pressure.
+</p>
+
 ---
-title: EcoCloud OpenEnv
-emoji: "🌿"
-colorFrom: green
-colorTo: blue
-sdk: docker
-app_port: 7860
-tags:
-  - openenv
-  - carbon-aware-scheduling
-  - infrastructure
-  - gpu-operations
-  - reinforcement-learning
-license: mit
+
+## What Is EcoCloud?
+
+EcoCloud is a deterministic OpenEnv environment for evaluating AI agents on **real-world GPU fleet operations**.
+
+The environment models a distributed GPU infrastructure across multiple regions with different:
+
+- carbon intensity
+- energy prices
+- ambient temperature
+- thermal stress conditions
+
+An agent interacts through the standard environment loop:
+
+- `reset()`
+- `step(action)`
+- `state()`
+
+The objective is to optimize infrastructure behavior while balancing:
+
+- carbon
+- cost
+- thermal safety
+- workload reliability
+
 ---
 
-# EcoCloud OpenEnv
+## Why This Benchmark Matters
 
-EcoCloud is a real-world OpenEnv environment for carbon-aware GPU infrastructure operations. The agent acts like a cloud platform operator managing distributed GPU fleets under conflicting objectives:
+Real AI infrastructure is expensive, power-hungry, and operationally constrained.
 
-- reduce carbon emissions
-- reduce energy cost
-- avoid thermal incidents
-- preserve workload reliability
+In practice, platform and SRE teams must continuously decide:
 
-This environment is built for the Meta x Scalar OpenEnv hackathon and is designed to evaluate agent behavior on a task that human operators actually perform: workload placement and infrastructure optimization across regions with different grid carbon intensity, energy prices, and cooling conditions.
+- which workloads can be moved to cleaner regions
+- when idle servers should be powered down
+- how to reduce energy spend safely
+- how to avoid overheating or reliability regressions
 
-## Why This Environment Matters
+EcoCloud turns that real workflow into a reproducible benchmark for agent evaluation.
 
-Modern AI systems consume large amounts of GPU capacity. In practice, operations teams constantly make decisions about:
+---
 
-- where to run flexible workloads
-- when to power down idle servers
-- how to shift jobs away from expensive or dirty regions
-- how to protect production workloads during thermal or cost stress
+## Hackathon Compliance
 
-EcoCloud turns that real operational workflow into a deterministic, reproducible OpenEnv benchmark.
-
-## Hackathon Compliance Summary
-
-This repository includes the required components for the hackathon:
+This repository is structured to satisfy the Meta x Scalar OpenEnv hackathon requirements:
 
 - real-world task simulation
-- typed Pydantic `Observation`, `Action`, and `Reward` models
-- full `reset()`, `step()`, and `state()` environment flow
-- `openenv.yaml` in the repository root
-- 3 deterministic tasks with grader scores in `[0.0, 1.0]`
-- shaped reward with partial progress and penalties
+- typed Pydantic models for observations, actions, and rewards
+- full environment flow through `reset`, `step`, and `state`
+- root-level `openenv.yaml`
+- 3 deterministic tasks with graders
+- bounded reward and score outputs in `[0.0, 1.0]`
 - root-level `inference.py`
-- Hugging Face Space-compatible Docker deployment
-- README with setup, task definitions, spaces, and baseline scores
+- Docker-ready deployment for Hugging Face Spaces
+- documented setup, scoring, and deployment flow
 
-## Environment Overview
+---
 
-EcoCloud simulates a GPU fleet spread across multiple regions. Each region has its own:
+## Environment Design
 
+### Core Entities
+
+**Regions**
 - carbon intensity
 - electricity price
 - ambient temperature
 
-Each server has:
-
+**Servers**
 - GPU capacity
-- power characteristics
+- active/off state
+- power caps
+- power draw
 - thermal behavior
-- on/off state
-- assigned workloads
+- workload assignments
 
-Each workload has:
-
+**Workloads**
 - GPU demand
-- migration eligibility
-- allowed regions
 - priority
-- placement target class
+- migration policy
+- allowed regions
+- target behavior class
 
-The environment is deterministic. There is no randomness in task generation, transitions, or grading.
+### Operational Objective
 
-## OpenEnv API
+The agent must find strong operational tradeoffs across:
 
-The service exposes the standard environment flow through HTTP:
+- lower emissions
+- lower cost
+- lower thermal risk
+- higher reliability
 
-- `POST /reset`
-- `POST /step`
-- `GET /state`
-- `GET /validate`
-- `GET /tasks`
+This makes the benchmark realistic and multi-objective rather than simplistic.
 
-### `reset(task_id)`
+---
 
-Initializes a clean episode for the selected task and returns the first observation.
+## API Surface
 
-### `step(action)`
+The environment is exposed as a FastAPI service.
 
-Applies a typed action and returns:
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/` | `GET` | root metadata |
+| `/health` | `GET` | health check |
+| `/tasks` | `GET` | list all tasks |
+| `/reset` | `POST` | start a task episode |
+| `/step` | `POST` | apply one action |
+| `/state` | `GET` | inspect current environment state |
+| `/validate` | `GET` | validation metadata |
+| `/grade/{task_id}` | `GET` | final grader output |
 
-- next observation
-- reward
-- done flag
-- grader and execution info
-
-### `state()`
-
-Returns the current internal environment state including current metrics and recent actions.
+---
 
 ## Action Space
 
-The agent can take one action per step.
+The agent can take one of the following actions:
 
-### Supported actions
+| Action | Description |
+|---|---|
+| `migrate_workload` | move a workload to another active server |
+| `set_power_cap` | adjust server power cap |
+| `shutdown_server` | turn off an idle server |
+| `activate_server` | bring an inactive server online |
+| `noop` | take no action |
 
-- `migrate_workload`
-- `set_power_cap`
-- `shutdown_server`
-- `activate_server`
-- `noop`
-
-### Action schema
+### Action Schema
 
 ```json
 {
@@ -129,200 +158,246 @@ The agent can take one action per step.
 }
 ```
 
-### Action semantics
-
-- `migrate_workload`: move a migratable workload to another active server in an allowed region
-- `set_power_cap`: lower or raise the effective power cap of an active server
-- `shutdown_server`: turn off an active server that has no assigned workloads
-- `activate_server`: bring an inactive server online
-- `noop`: do nothing for the current step
+---
 
 ## Observation Space
 
-Each observation contains task context plus a structured view of regions, servers, workloads, and aggregate metrics.
+Each observation returned by the environment contains structured state for the current task and infrastructure snapshot.
 
-### Observation fields
+### Observation Fields
 
-- `task_id`
-- `task_name`
-- `difficulty`
-- `objective`
-- `step_number`
-- `max_steps`
-- `recent_event`
-- `allowed_action_types`
-- `regions`
-- `servers`
-- `workloads`
-- `metrics`
+| Field | Type | Description |
+|---|---|---|
+| `task_id` | string | active task identifier |
+| `task_name` | string | human-readable task name |
+| `difficulty` | string | task difficulty level |
+| `objective` | string | task objective |
+| `step_number` | integer | current step in the episode |
+| `max_steps` | integer | maximum allowed steps |
+| `recent_event` | string | latest environment event |
+| `allowed_action_types` | list | actions available to the agent |
+| `regions` | list | state of each region |
+| `servers` | list | state of each server |
+| `workloads` | list | state of each workload |
+| `metrics` | object | aggregate operational metrics |
 
-### Metrics exposed to the agent
+### Metrics Included
 
-- `total_power_kw`
-- `total_carbon_kgco2e`
-- `total_cost_usd`
-- `average_carbon_intensity`
-- `max_temperature_c`
-- `overloaded_gpu`
-- `thermal_risk_index`
-- `thermal_warning_servers`
-- `hard_thermal_violations`
-- `active_idle_servers`
-- `migration_count`
-- `reliability_score`
-- `critical_violations`
+| Metric | Description |
+|---|---|
+| `total_power_kw` | total power draw across the fleet |
+| `total_carbon_kgco2e` | total carbon emissions |
+| `total_cost_usd` | energy cost |
+| `average_carbon_intensity` | weighted average carbon intensity |
+| `max_temperature_c` | highest server temperature |
+| `overloaded_gpu` | overloaded GPU amount |
+| `thermal_risk_index` | normalized thermal risk |
+| `thermal_warning_servers` | servers near unsafe temperature |
+| `hard_thermal_violations` | servers above hard thermal limits |
+| `active_idle_servers` | active servers with no useful load |
+| `migration_count` | number of workload migrations |
+| `reliability_score` | workload safety and stability score |
+| `critical_violations` | number of critical-service violations |
+
+---
 
 ## Reward Function
 
 Rewards are dense and normalized to `[0.0, 1.0]`.
 
-### Reward components
+### Reward Components
 
-- `progress`: current task grader score
-- `efficiency`: task-specific operational improvement
-- `reliability`: service safety and thermal stability
-- `penalty`: invalid actions, wasted steps, and hard failures
-- `grader_score`: current deterministic task score
+- `progress`
+- `efficiency`
+- `reliability`
+- `penalty`
+- `grader_score`
 
-### Reward design goals
+### Reward Intent
 
-- provide useful signal before episode completion
-- reward partial progress toward task success
-- penalize invalid or obviously bad operational actions
-- prevent exploit patterns such as repeated `noop` or destructive actions
+The reward system is designed to:
+
+- provide useful signal throughout the episode
+- reward partial operational progress
+- penalize invalid or destructive actions
+- discourage wasted steps and bad control loops
+
+---
 
 ## Tasks
 
-The environment includes three graded tasks with increasing difficulty.
+EcoCloud includes three deterministic tasks with increasing difficulty.
 
-### Task 1: Idle Capacity Cleanup
+### 1. Idle Capacity Cleanup
 
-- `task_id`: `task_1_idle_capacity_cleanup`
-- difficulty: `easy`
-- max steps: `5`
-- objective: shut down idle GPU servers without disrupting any live workloads
+- **Task ID:** `task_1_idle_capacity_cleanup`
+- **Difficulty:** Easy
+- **Max Steps:** 5
 
-This task measures whether the agent can identify safe shutdown opportunities and remove waste without touching protected workloads.
+Objective:
+Safely shut down idle GPU servers without disrupting live workloads.
 
-### Task 2: Carbon-Aware Rebalancing
+This task tests:
+- safe server shutdown logic
+- elimination of wasted capacity
+- service-preserving decision making
 
-- `task_id`: `task_2_carbon_aware_rebalancing`
-- difficulty: `medium`
-- max steps: `8`
-- objective: move flexible workloads from high-carbon regions into lower-carbon capacity without overloading servers or moving pinned services
+---
 
-This task measures workload shifting under realistic placement constraints.
+### 2. Carbon-Aware Rebalancing
 
-### Task 3: Resilient Multi-Objective Dispatch
+- **Task ID:** `task_2_carbon_aware_rebalancing`
+- **Difficulty:** Medium
+- **Max Steps:** 8
 
-- `task_id`: `task_3_resilient_multi_objective_dispatch`
-- difficulty: `hard`
-- max steps: `10`
-- objective: reduce carbon, cost, and thermal risk during a heat wave while maintaining reliability for real-time workloads
+Objective:
+Move flexible workloads away from high-carbon regions into cleaner capacity while respecting placement constraints.
 
-This task measures true multi-objective operations under operational stress.
+This task tests:
+- constrained workload migration
+- carbon-aware dispatch
+- workload protection rules
+
+---
+
+### 3. Resilient Multi-Objective Dispatch
+
+- **Task ID:** `task_3_resilient_multi_objective_dispatch`
+- **Difficulty:** Hard
+- **Max Steps:** 10
+
+Objective:
+Reduce carbon, cost, and thermal risk during infrastructure stress while preserving reliability for real-time services.
+
+This task tests:
+- multi-objective optimization
+- hotspot mitigation
+- thermal-aware infrastructure control
+- reliability-preserving workload placement
+
+---
 
 ## Graders
 
-Each task has a deterministic grader that returns a score in `[0.0, 1.0]`.
+Each task has a deterministic grader with score output in `[0.0, 1.0]`.
 
-### Grader properties
+### Grading Principles
 
 - deterministic
 - reproducible
-- bounded score range
-- partial credit
-- hard-failure handling
+- bounded
+- partial-credit based
+- hard-failure aware
 
-### Task 1 grading
+### Grader Focus By Task
 
-Scores:
+| Task | What Gets Measured |
+|---|---|
+| Task 1 | idle cleanup, safety, carbon improvement |
+| Task 2 | low-carbon shift ratio, capacity safety, protected workloads |
+| Task 3 | carbon gain, cost gain, thermal stability, hotspot relief, reliability |
 
-- idle server cleanup
-- protected workload safety
-- carbon improvement
+Hard thermal failures and critical workload violations cap the final score.
 
-### Task 2 grading
+---
 
-Scores:
+## Baseline Inference
 
-- fraction of flexible workload shifted to low-carbon regions
-- capacity safety
-- protected workload preservation
-- carbon improvement
+The repository includes a root-level `inference.py` that:
 
-### Task 3 grading
+- runs all tasks
+- uses the OpenAI client for LLM calls
+- reads required environment variables
+- emits structured `[START]`, `[STEP]`, and `[END]` logs
+- produces reproducible scores
 
-Scores:
+### Required Environment Variables
 
-- carbon improvement
-- cost improvement
-- thermal score
-- reliability score
-- hotspot relief
+| Variable | Purpose |
+|---|---|
+| `API_BASE_URL` | OpenAI-compatible endpoint |
+| `MODEL_NAME` | model identifier |
+| `HF_TOKEN` | Hugging Face / API token |
+| `LOCAL_IMAGE_NAME` | optional for docker-image-based flows |
 
-Critical-service violations and hard thermal failures cap the final score.
+---
+
+## Baseline Scores
+
+Measured with the included deterministic baseline:
+
+| Task | Difficulty | Score | Passed |
+|---|---|---:|---:|
+| `task_1_idle_capacity_cleanup` | Easy | `0.9191` | `true` |
+| `task_2_carbon_aware_rebalancing` | Medium | `0.8760` | `true` |
+| `task_3_resilient_multi_objective_dispatch` | Hard | `0.7721` | `true` |
+
+---
 
 ## Project Structure
 
 ```text
-app.py
-env/
-  __init__.py
-  baseline_policy.py
-  environment.py
-  models.py
-graders/
-  __init__.py
-  graders.py
-tasks/
-  __init__.py
-  task_data.py
-tests/
-  __init__.py
-  test_env.py
-inference.py
-openenv.yaml
-preflight_check.py
-Dockerfile
-requirements.txt
-README.md
+.
+├── app.py
+├── inference.py
+├── openenv.yaml
+├── preflight_check.py
+├── Dockerfile
+├── requirements.txt
+├── env/
+│   ├── __init__.py
+│   ├── baseline_policy.py
+│   ├── environment.py
+│   └── models.py
+├── graders/
+│   ├── __init__.py
+│   └── graders.py
+├── tasks/
+│   ├── __init__.py
+│   └── task_data.py
+└── tests/
+    ├── __init__.py
+    └── test_env.py
 ```
+
+---
 
 ## Local Setup
 
-### 1. Create a virtual environment
+### Create a virtual environment
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 2. Install dependencies
+### Install dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 3. Start the environment server
+### Start the server
 
 ```powershell
 uvicorn app:app --host 0.0.0.0 --port 7860
 ```
 
-### 4. Run tests
+### Run tests
 
 ```powershell
 python -m unittest
 ```
 
-### 5. Run the local preflight
+### Run local preflight
 
 ```powershell
 python preflight_check.py
 ```
 
-## Using The Environment
+---
+
+## API Usage
 
 ### List tasks
 
@@ -336,7 +411,7 @@ Invoke-RestMethod -Method Get -Uri "http://localhost:7860/tasks"
 Invoke-RestMethod -Method Post -Uri "http://localhost:7860/reset" -ContentType "application/json" -Body '{"task_id":"task_1_idle_capacity_cleanup"}'
 ```
 
-### Take a step
+### Apply an action
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri "http://localhost:7860/step" -ContentType "application/json" -Body '{"action_type":"noop","task_id":"task_1_idle_capacity_cleanup","rationale":"example"}'
@@ -348,44 +423,18 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:7860/step" -ContentType "a
 Invoke-RestMethod -Method Get -Uri "http://localhost:7860/state"
 ```
 
-## Baseline Inference
+---
 
-The required baseline script is [inference.py](./inference.py). It runs all tasks and emits structured logs using the required `[START]`, `[STEP]`, and `[END]` prefixes.
-
-### Required environment variables
-
-- `API_BASE_URL`
-- `MODEL_NAME`
-- `HF_TOKEN`
-
-Optional:
-
-- `ENV_BASE_URL` defaults to `http://localhost:7860`
-- `OPENAI_API_KEY` may also be used for OpenAI-compatible routing
-
-### Example
+## Run The Baseline
 
 ```powershell
-$env:ENV_BASE_URL="http://localhost:7860"
 $env:API_BASE_URL="https://router.huggingface.co/v1"
 $env:MODEL_NAME="meta-llama/Meta-Llama-3.1-8B-Instruct"
 $env:HF_TOKEN="your_token_here"
 python inference.py
 ```
 
-### Baseline behavior
-
-The baseline uses a deterministic heuristic policy and optionally routes action verification through the OpenAI client when credentials are configured. This keeps the run reproducible while still satisfying the hackathon requirement that LLM calls use the OpenAI client.
-
-## Reproducible Baseline Scores
-
-Measured locally with the included baseline:
-
-| Task | Difficulty | Score | Passed |
-|---|---|---:|---:|
-| `task_1_idle_capacity_cleanup` | easy | `0.9191` | `true` |
-| `task_2_carbon_aware_rebalancing` | medium | `0.8760` | `true` |
-| `task_3_resilient_multi_objective_dispatch` | hard | `0.7721` | `true` |
+---
 
 ## Docker
 
@@ -401,47 +450,51 @@ docker build -t ecocloud-openenv .
 docker run -p 7860:7860 ecocloud-openenv
 ```
 
-## Hugging Face Spaces Deployment
+---
 
-This repository is prepared for a Docker-based Hugging Face Space.
+## Hugging Face Spaces
 
-### Deployment steps
+This repository is prepared for Docker-based Hugging Face Spaces deployment.
 
-1. Create a new Space with `Docker` as the SDK.
-2. Push this repository to the Space.
-3. Add the following Space variables and secrets:
-   - `API_BASE_URL`
-   - `MODEL_NAME`
-   - `HF_TOKEN`
-4. Wait for the build to finish.
-5. Verify:
-   - `GET /health`
-   - `GET /tasks`
-   - `POST /reset`
-   - `GET /state`
+### Deployment Checklist
+
+- Space created with **Docker** SDK
+- root endpoint returns `200`
+- `/reset` works
+- `/step` works
+- `API_BASE_URL` is configured
+- `MODEL_NAME` is configured
+- `HF_TOKEN` is configured
+- live baseline run completes successfully
+
+---
 
 ## Validation Checklist
 
-Before submission, verify all of the following:
+Before submission, verify:
 
 - `python -m unittest` passes
 - `python preflight_check.py` passes
-- `python inference.py` completes successfully
-- scores stay within `[0.0, 1.0]`
-- HF Space builds without errors
-- deployed Space returns `200`
+- `python inference.py` completes without error
+- all scores remain in `[0.0, 1.0]`
+- HF Space is live
 - live `/reset` works
-- `openenv.yaml` exists at repo root
-- `inference.py` exists at repo root
-- required env vars are configured in the deployment environment
+- Docker build succeeds
+- `openenv validate` passes if required in your environment
 
-## Known Remaining Risk
+---
 
-The environment is locally complete and validated. The remaining submission risk is external:
+## Final Notes
 
-- final Hugging Face Space build success
-- exact compliance with the official hackathon sample log formatting
-- official validator compatibility if the organizers use a stricter OpenEnv validator than the local `/validate` endpoint
+EcoCloud is intentionally deterministic to support:
+
+- fair benchmarking
+- reproducible grading
+- stable comparison across agent runs
+
+It is designed not just as a hackathon deliverable, but as a useful benchmark for infrastructure-oriented agent evaluation.
+
+---
 
 ## License
 
