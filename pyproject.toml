@@ -24,7 +24,6 @@ dependencies = [
 
 [project.scripts]
 server = "server.app:main"
-
 [tool.setuptools]
 py-modules = ["app", "inference", "preflight_check"]
 
