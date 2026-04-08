@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecocloud-openenv"
+version = "1.0.0"
+description = "A real-world OpenEnv benchmark for carbon-aware GPU infrastructure operations."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Kartik Raut" }
+]
+dependencies = [
+  "fastapi>=0.115.0,<1.0.0",
+  "uvicorn[standard]>=0.34.0,<1.0.0",
+  "pydantic>=2.10.0,<3.0.0",
+  "requests>=2.32.0,<3.0.0",
+  "openai>=1.75.0,<2.0.0",
+  "httpx>=0.27.0,<1.0.0"
+]
+
+[tool.setuptools]
+py-modules = ["app", "inference", "preflight_check"]
+
+[tool.setuptools.packages.find]
+include = ["env*", "graders*", "tasks*"]
