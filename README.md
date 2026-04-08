@@ -1,25 +1,18 @@
-<p align="center">
-  <h1 align="center">EcoCloud OpenEnv</h1>
-  <p align="center">
-    A real-world OpenEnv benchmark for carbon-aware GPU infrastructure operations.
-  </p>
-</p>
-
-<p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white">
-  <img alt="Docker" src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white">
-  <img alt="OpenEnv" src="https://img.shields.io/badge/OpenEnv-Compatible-111111">
-  <img alt="HF Spaces" src="https://img.shields.io/badge/HuggingFace-Spaces-FFD21E">
-</p>
-
-<p align="center">
-  EcoCloud simulates the real operational decisions made by infra and platform teams:
-  workload placement, carbon-aware scheduling, power-cap management, idle capacity cleanup,
-  and reliability-preserving dispatch under thermal and cost pressure.
-</p>
-
 ---
+title: EcoCloud OpenEnv
+emoji: "🌿"
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+tags:
+  - openenv
+  - carbon-aware-scheduling
+  - infrastructure
+  - reinforcement-learning
+license: mit
+---
+
 
 ## What Is EcoCloud?
 
